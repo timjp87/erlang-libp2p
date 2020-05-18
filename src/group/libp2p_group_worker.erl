@@ -380,7 +380,7 @@ handle_assign_stream(StreamPid, #data{tid=TID, stream_pid=CurrentStreamPid,
     %% If local peer's multiaddr is greater lexicographically, then we pick the stream where he is the dialer
     %% otherwise we pick the other stream which will be where he has received an inbound connection
     %% NOTE: MAddr here will be the multi addr of the remote peer
-    {WinnerStream, LooserStream} =
+    {WinnerStream, LoserStream} =
         case LocalPeerMAddr > MAddr of
             true ->
                 lager:debug("keeping local outgoing stream and dropping inbound", []),
@@ -389,7 +389,7 @@ handle_assign_stream(StreamPid, #data{tid=TID, stream_pid=CurrentStreamPid,
                 lager:debug("dropping local outgoing stream and switching to inbound", []),
                 {maps:get(inbound_stream, TaggedStreams), maps:get(outbound_stream, TaggedStreams)}
         end,
-    handle_stream_winner_looser(CurrentStreamPid, WinnerStream, LooserStream, Data).
+    handle_stream_winner_loser(CurrentStreamPid, WinnerStream, LoserStream, Data).
 
 handle_event(cast, {send, Ref, _Msg, _MaybeEncode}, #data{server=Server, stream_pid=undefined}) ->
     %% Trying to send while not connected to a stream
@@ -467,11 +467,11 @@ handle_event(EventType, Msg, #data{}) ->
 %% Utilities
 %%
 
-handle_stream_winner_looser(CurrentStream, WinnerStream, LooserStream, Data) when CurrentStream /= WinnerStream->
-    libp2p_framed_stream:close(LooserStream),
+handle_stream_winner_loser(CurrentStream, WinnerStream, LoserStream, Data) when CurrentStream /= WinnerStream->
+    libp2p_framed_stream:close(LoserStream),
     {ok, update_metadata(Data#data{stream_pid=update_stream(WinnerStream, Data)})};
-handle_stream_winner_looser(_CurrentStream, _WinnerStream, LooserStream, _Data) ->
-    libp2p_framed_stream:close(LooserStream),
+handle_stream_winner_loser(_CurrentStream, _WinnerStream, LoserStream, _Data) ->
+    libp2p_framed_stream:close(LoserStream),
     false.
 
 handle_send(StreamPid, Server, Ref, Bin, Data)->
