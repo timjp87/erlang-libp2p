@@ -255,6 +255,7 @@ handle_info({handle_identify, {From, StreamPid, Path}, {ok, Identify}}, State=#s
         %% If not, we we check if we can accept a random inbound
         %% connection and start a worker for the inbound stream if ok
         false ->
+            lager:debug("received identity for non existing target ~p.  Stream: ~p",[Target, StreamPid]),
             case count_workers(inbound, State) > State#state.max_inbound_connections of
                 true ->
                     lager:debug("Too many inbound workers: ~p",
@@ -269,6 +270,7 @@ handle_info({handle_identify, {From, StreamPid, Path}, {ok, Identify}}, State=#s
         %% There's an existing worker for the given address, re-assign
         %% the worker the new stream.
         #worker{pid=Worker} ->
+            lager:debug("received identity for existing target ~p.  Stream: ~p",[Target, StreamPid]),
             libp2p_group_worker:assign_stream(Worker, StreamPid, Path),
             gen_server:reply(From, ok),
             {noreply, State}
